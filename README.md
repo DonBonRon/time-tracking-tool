@@ -1,91 +1,99 @@
-# Zeiterfassung
+# Time Tracking Tool
 
-Schlanke Zeiterfassung für Kundenzeiten: ein Nutzer, eine Web-App für Desktop und Smartphone,
-funktioniert auch bei schlechtem Netz.
+🇩🇪 [Deutsche Version](README.de.md)
 
-- **Timer** mit Ein-Klick-Start für die zuletzt genutzten Kunden; Startzeit und Laufzeit werden live angezeigt
-- **Zeiten nachtragen und bearbeiten** über Start und Ende oder über die Dauer (auch über Mitternacht), mit „Rückgängig“ beim Löschen
-- **Kundenverwaltung**: Name genügt; Kunden lassen sich archivieren statt löschen
-- **Auswertung** für den aktuellen Monat und frühere Monate, je Kunde in h:mm und Dezimalstunden, Vergleich zum Vormonat, CSV-Export
-- **E-Mails**: automatischer Monatsbericht (optional auch wöchentlich) mit CSV-Anhang und Erinnerung, wenn ein Timer länger als 8 Stunden läuft (einstellbar)
-- **Offline-fähig**: Die App liegt im Cache, alle Änderungen werden lokal gespeichert und automatisch synchronisiert, sobald Netz da ist
-- **Anmeldung**: nur ein Passwort; danach bleibst du auf jedem Gerät dauerhaft angemeldet (gleitend 400 Tage)
+A minimal, self-hosted time tracker for client work: one user, one web app for desktop and phone,
+and it keeps working on a weak or missing network connection.
 
-Eine Übersicht über Konkurrenzprodukte und die Begründung, welche Funktionen übernommen wurden und welche bewusst nicht,
-steht in [docs/konkurrenzanalyse.md](docs/konkurrenzanalyse.md).
+- **Timer:** one-tap start for your most recent clients. Start time and elapsed time are shown live.
+- **Add and edit entries afterwards:** enter start and end, or just the duration. Entries past midnight work too, and deleting can be undone.
+- **Clients:** a name is all you need. Old clients can be archived instead of deleted.
+- **Reports:** current and previous months, per client in h:mm and decimal hours, comparison with the previous month, CSV export.
+- **Emails:** automatic monthly report (optionally weekly) with a CSV attachment, and a reminder when a timer has been running for more than 8 hours (configurable).
+- **Offline-first:** the app is cached on the device. All changes are stored locally and synced automatically once you're back online.
+- **Login:** a single password. After that you stay signed in on each device (sliding 400-day session).
 
-## Technik
+> **Note:** The user interface, emails and CSV export are currently in **German** only.
+
+For a comparison with other tools (Toggl Track, Clockify, Harvest, Kimai, solidtime …) and the reasoning
+behind which features were included and which were deliberately left out, see
+[docs/konkurrenzanalyse.md](docs/konkurrenzanalyse.md) (German).
+
+## Tech stack
 
 | | |
 |---|---|
-| Server | Node.js ≥ 20, Express, MySQL/MariaDB (`mysql2`, kein nativer Build nötig), Nodemailer |
-| Frontend | Plain JavaScript, keine Build-Schritte; PWA mit Service Worker und IndexedDB |
-| Abhängigkeiten | 3 npm-Pakete (`express`, `mysql2`, `nodemailer`) |
+| Server | Node.js ≥ 20, Express, MySQL/MariaDB (`mysql2`, no native build required), Nodemailer |
+| Frontend | Plain JavaScript, no build step; PWA with service worker and IndexedDB |
+| Dependencies | 3 npm packages (`express`, `mysql2`, `nodemailer`) |
 
-Die Tabellen legt die App beim Start selbst an. Du brauchst nur eine leere Datenbank.
+The app creates its database tables on startup. All you need is an empty database.
 
 ---
 
-## Installation auf dem Webserver
+## Installation
 
-### 1. Datenbank anlegen
+### 1. Create a database
 
-Im Hosting-Panel (Plesk, cPanel …) eine MySQL-Datenbank mit eigenem Benutzer anlegen. Per SQL:
+Create a MySQL database with its own user in your hosting panel (Plesk, cPanel …), or via SQL:
 
 ```sql
 CREATE DATABASE timetrack CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'timetrack'@'localhost' IDENTIFIED BY 'ein-langes-passwort';
+CREATE USER 'timetrack'@'localhost' IDENTIFIED BY 'a-long-password';
 GRANT ALL PRIVILEGES ON timetrack.* TO 'timetrack'@'localhost';
 ```
 
-### 2. Dateien hochladen und Abhängigkeiten installieren
+### 2. Upload the files and install dependencies
 
 ```bash
-git clone <repo-url> zeiterfassung && cd zeiterfassung
+git clone https://github.com/donbonron/time-tracking-tool.git && cd time-tracking-tool
 npm install --omit=dev
-cp .env.example .env    # dann anpassen (DB, SMTP, APP_URL …)
+cp .env.example .env    # then edit it (database, SMTP, APP_URL …)
 ```
 
-Statt der `.env`-Datei kannst du alle Werte auch als Umgebungsvariablen im Hosting-Panel eintragen.
+Instead of a `.env` file you can also set all values as environment variables in your hosting panel.
 
-### 3. Passwort setzen
+If you copy the files manually, you need `app.cjs`, `package.json`, `package-lock.json`, `.env.example`
+and the folders `server/`, `public/` and `scripts/`. Don't upload `node_modules/`, because `npm install` creates it on the server.
+
+### 3. Set the password
 
 ```bash
 npm run set-password
 ```
 
-Ohne SSH-Zugang (z. B. „Skript ausführen“ in Plesk) funktioniert die Eingabe nicht. Dann
-`APP_PASSWORD=…` in die `.env` eintragen und die App starten. Ist noch kein Passwort gespeichert,
-übernimmt sie es beim Start. Danach die Zeile wieder entfernen.
+This needs an interactive terminal (SSH). Without one (for example Plesk's "Run script"), put
+`APP_PASSWORD=…` into `.env` and start the app. If no password is stored yet, the app uses this one on startup.
+Remove the line afterwards.
 
-### 4. App starten
+### 4. Start the app
 
-**Plesk („Node.js“-Erweiterung) / cPanel („Setup Node.js App“):**
+**Plesk ("Node.js" extension) / cPanel ("Setup Node.js App"):**
 
-| Einstellung | Wert |
+| Setting | Value |
 |---|---|
-| Node.js-Version | 20 oder neuer |
-| Anwendungsstamm | Ordner des Projekts |
-| Startdatei | `app.cjs` |
-| Umgebungsvariablen | wie in `.env.example` (oder `.env`-Datei im Projektordner) |
+| Node.js version | 20 or newer |
+| Application root | the project folder |
+| Application startup file | `app.cjs` |
+| Environment variables | as in `.env.example` (or a `.env` file in the project folder) |
 
-Danach „NPM install“ und „App neu starten“ klicken. Der Port wird automatisch gesetzt.
+Then click "NPM install" and "Restart App". The port is set automatically.
 
-**Wichtig bei Plesk:** Den **Dokumentenstamm** auf einen leeren Unterordner setzen, z. B. `/zeiterfassung/webroot`,
-nicht auf `public`. Liegen dort Dateien, liefert der Webserver sie an der App vorbei aus. Dann fehlen
-Sicherheits-Header und App-Updates kommen nicht auf den Geräten an. Den Projektordner auch nicht in
-`httpdocs` legen, sonst wäre die `.env` womöglich von außen abrufbar.
+**Important for Plesk:** set the **document root** to an empty subfolder such as `/time-tracking-tool/webroot`,
+not to `public`. Any files in the document root are served by the web server directly, bypassing the app.
+Security headers would then be missing, and app updates would not reach your devices. Also don't put the
+project folder inside `httpdocs`, otherwise your `.env` might be downloadable.
 
-**Eigener Server / VPS:** mit systemd oder pm2 starten und einen Reverse Proxy mit HTTPS davorsetzen.
+**Your own server / VPS:** run the app with systemd or pm2 and put a reverse proxy with HTTPS in front of it.
 
 ```ini
-# /etc/systemd/system/zeiterfassung.service
+# /etc/systemd/system/time-tracking.service
 [Unit]
-Description=Zeiterfassung
+Description=Time Tracking Tool
 After=network.target mysql.service
 
 [Service]
-WorkingDirectory=/opt/zeiterfassung
+WorkingDirectory=/opt/time-tracking-tool
 ExecStart=/usr/bin/node app.cjs
 Restart=always
 User=www-data
@@ -96,93 +104,96 @@ WantedBy=multi-user.target
 ```
 
 ```
-# Caddyfile (HTTPS-Zertifikat automatisch)
-zeit.example.de {
+# Caddyfile (automatic HTTPS certificate)
+time.example.com {
     reverse_proxy localhost:3000
 }
 ```
 
-### 5. Cronjob für Erinnerungen und Berichte einrichten (empfohlen)
+### 5. Set up a cron job for reminders and reports (recommended)
 
-Die App prüft intern jede Minute, ob eine Erinnerung oder ein Bericht fällig ist. Viele Hoster
-(Passenger in Plesk/cPanel) beenden Node-Apps aber nach einiger Zeit ohne Aufrufe. Dann würde eine
-Erinnerung nachts nicht verschickt. Lege deshalb einen Cronjob an, der alle 5 Minuten diese Adresse aufruft:
+The app checks every minute whether a reminder or report is due. Many hosts (Passenger in Plesk/cPanel)
+stop idle Node.js apps after a while, though, and then a reminder at night would never be sent. So add a cron job
+that calls this URL every 5 minutes:
 
 ```bash
-# CRON_SECRET in der .env setzen, z. B. mit: openssl rand -hex 24
-*/5 * * * * curl -fsS "https://zeit.example.de/api/cron?key=DEIN_CRON_SECRET" > /dev/null
+# Set CRON_SECRET in .env, e.g. generated with: openssl rand -hex 24
+*/5 * * * * curl -fsS "https://time.example.com/api/cron?key=YOUR_CRON_SECRET" > /dev/null
 ```
 
-In Plesk heißt das „Geplante Aufgaben“ → „URL abrufen“, in cPanel „Cron Jobs“.
+In Plesk this is "Scheduled Tasks" → "Fetch a URL". In cPanel it's "Cron Jobs".
 
-### 6. Auf dem Smartphone installieren
+### 6. Install on your phone
 
-Seite im Browser öffnen und anmelden. Danach:
+Open the site in your browser and sign in. Then:
 
-- **iPhone (Safari):** Teilen → „Zum Home-Bildschirm“
-- **Android (Chrome):** Menü → „App installieren“
+- **iPhone (Safari):** Share → "Add to Home Screen"
+- **Android (Chrome):** menu → "Install app"
 
-Die App startet dann wie eine normale App, ohne Browserleiste, und funktioniert offline.
-Auf dem iPhone ist die Installation besonders sinnvoll: Safari löscht lokale Daten von Webseiten,
-die 7 Tage nicht genutzt wurden. Für installierte Apps gilt diese Regel nicht.
-Deine Daten liegen in jedem Fall auf dem Server.
+The app then launches like a regular app, without the browser bar, and works offline.
+Installing it is especially worthwhile on iPhone: Safari deletes local data of websites that haven't been used
+for 7 days, but this rule doesn't apply to installed apps. Your data is always stored on the server either way.
 
 ---
 
-## Bedienung in Kürze
+## Usage at a glance
 
-- **Starten:** Kunden-Button antippen. Ein laufender Timer wird dabei automatisch gestoppt.
-- **Stoppen:** „Stopp“. Direkt danach kannst du mit „Weiterlaufen“ rückgängig machen.
-- **Vergessen zu starten?** Timer starten, dann „Bearbeiten“ und die Startzeit zurücksetzen.
-- **Vergessen zu stoppen?** Eintrag antippen und Ende oder Dauer korrigieren.
-- **Nachtragen:** „+ Zeit nachtragen“. Dauer als `1:30` oder `1,5` eingeben, die Endzeit wird automatisch berechnet.
-- **Auswertung:** Mit ‹ › zwischen Monaten wechseln. Klick auf einen Kunden zeigt dessen Einträge.
-- **Sync-Anzeige oben rechts:** grün = synchron, gelb = Änderungen ausstehend, grau = offline. Antippen synchronisiert sofort.
+- **Start:** tap a client button. Any running timer is stopped automatically.
+- **Stop:** tap "Stopp". Right afterwards you can undo with "Weiterlaufen" (keep running).
+- **Forgot to start?** Start the timer, tap "Bearbeiten" (edit) and move the start time back.
+- **Forgot to stop?** Tap the entry and correct the end time or duration.
+- **Add time:** "+ Zeit nachtragen". Enter the duration as `1:30` or `1,5` and the end time is calculated for you.
+- **Reports:** switch months with ‹ ›. Click a client to see their entries.
+- **Sync indicator (top right):** green = in sync, yellow = changes pending, grey = offline. Tap it to sync immediately.
 
-## Sicherheit
+## Security
 
-- Das Passwort wird mit scrypt gehasht gespeichert. Nach 5 Fehlversuchen pro IP sind Anmeldungen 15 Minuten gesperrt, zusätzlich gibt es eine globale Bremse.
-- Die Session liegt in einem zufälligen 256-Bit-Token im Cookie (`HttpOnly`, `Secure`, `SameSite=Strict`). In der Datenbank steht nur der SHA-256-Hash des Tokens.
-- Die Session verlängert sich bei Nutzung automatisch, sodass du praktisch nie neu anmelden musst. Über „Alle Geräte abmelden“ oder `npm run set-password` werden alle Sessions sofort ungültig.
-- Schreibende Anfragen von fremden Origins lehnt der Server ab (CSRF-Schutz). Dazu kommen eine strikte Content-Security-Policy, `X-Frame-Options: DENY` und `noindex`.
-- **HTTPS ist Pflicht**: Sonst werden weder das Cookie noch der Service Worker (Offline-Modus) genutzt.
-- `TRUST_PROXY=1` (Standard) nur hinter einem Reverse Proxy verwenden. Ist Node direkt aus dem Internet erreichbar, auf `0` setzen.
+- The password is stored as a scrypt hash. After 5 failed attempts per IP, logins are blocked for 15 minutes. There is also a global rate limit.
+- The session is a random 256-bit token in a cookie (`HttpOnly`, `Secure`, `SameSite=Strict`). The database only stores its SHA-256 hash.
+- The session is extended automatically on use, so you practically never have to sign in again. "Alle Geräte abmelden" (sign out all devices) or `npm run set-password` invalidates all sessions immediately.
+- Write requests from foreign origins are rejected (CSRF protection). On top of that there's a strict Content Security Policy, `X-Frame-Options: DENY` and `noindex`.
+- **HTTPS is required.** Without it, neither the session cookie nor the service worker (offline mode) will work.
+- Use `TRUST_PROXY=1` (the default) only behind a reverse proxy. If Node.js is directly reachable from the internet, set it to `0`.
 
-## Wie die Offline-Synchronisation funktioniert
+## How offline sync works
 
-Jeder Datensatz (Kunde, Eintrag) hat eine im Browser erzeugte UUID und einen Änderungszeitstempel.
-Änderungen landen sofort in IndexedDB und in einer Warteschlange. Beim Sync schickt der Browser die Warteschlange
-an `POST /api/sync` und bekommt alle Änderungen seit seinem letzten Stand zurück (fortlaufende Revisionsnummer).
-Bei Konflikten gewinnt die jüngere Änderung. Die Zeitstempel werden dafür an die Serveruhr angeglichen.
-Gelöschte Einträge bleiben als Löschmarkierung erhalten, damit andere Geräte die Löschung mitbekommen.
+Every record (client, entry) has a UUID generated in the browser and a modification timestamp.
+Changes go straight into IndexedDB and into a queue. On sync, the browser sends the queue to `POST /api/sync`
+and gets back every change since its last known state (a monotonically increasing revision number).
+On conflicts the newer change wins, and timestamps are aligned with the server clock for this.
+Deleted entries are kept as tombstones so that other devices learn about the deletion.
 
-## Entwicklung
+## Development
 
 ```bash
 npm install
-cp .env.example .env        # DB-Zugang eintragen, COOKIE_SECURE=false
+cp .env.example .env        # add database credentials, COOKIE_SECURE=false
 npm run dev                 # http://localhost:3000
 
-# Tests (Integrationstests brauchen eine leere Test-Datenbank)
+# Tests (the integration tests need an empty test database)
 TEST_DATABASE_URL=mysql://user:pass@localhost/timetrack_test npm test
 ```
 
-Projektstruktur:
+Project structure:
 
 ```
-app.cjs                Einstiegspunkt (für Passenger/Plesk/cPanel)
+app.cjs                Entry point (for Passenger/Plesk/cPanel)
 server/
-  index.js             Start, Hintergrund-Jobs
-  app.js               HTTP-API, Sicherheits-Header
-  auth.js              Passwort, Sessions, Login-Bremse
-  db.js                MySQL-Schema und Zugriffe
-  jobs.js              Erinnerungen, geplante Berichte
-  report-mail.js       Inhalt der E-Mails
-public/                Web-App (ohne Build-Schritt)
-  app.js               Oberfläche
-  store.js             lokale Daten + Synchronisation
-  shared/core.js       Auswertung/Formatierung (auch vom Server genutzt)
-  sw.js                Service Worker (Offline-Cache)
+  index.js             Startup, background jobs
+  app.js               HTTP API, security headers
+  auth.js              Password, sessions, login rate limiting
+  db.js                MySQL schema and queries
+  jobs.js              Reminders, scheduled reports
+  report-mail.js       Email content
+public/                Web app (no build step)
+  app.js               User interface
+  store.js             Local data + sync
+  shared/core.js       Reports/formatting (also used by the server)
+  sw.js                Service worker (offline cache)
 scripts/set-password.js
 test/
 ```
+
+## License
+
+[MIT](LICENSE)

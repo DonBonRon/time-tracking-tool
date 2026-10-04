@@ -2,7 +2,21 @@
   "name": "time-tracking-tool",
   "version": "1.0.0",
   "private": true,
-  "description": "Einfache Zeiterfassung für Kundenzeiten (Single-User, PWA, offline-fähig)",
+  "description": "Minimal self-hosted time tracker for client work (single user, offline-capable PWA, Node.js + MySQL)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donbonron/time-tracking-tool.git"
+  },
+  "keywords": [
+    "time-tracking",
+    "timesheet",
+    "pwa",
+    "offline-first",
+    "self-hosted",
+    "mysql",
+    "freelancer"
+  ],
   "type": "module",
   "main": "app.cjs",
   "scripts": {
