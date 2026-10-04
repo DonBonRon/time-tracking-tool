@@ -54,7 +54,9 @@ Statt der `.env`-Datei kannst du alle Werte auch als Umgebungsvariablen im Hosti
 npm run set-password
 ```
 
-Alternativ setzt du beim ersten Start `APP_PASSWORD=…` und entfernst den Wert danach wieder.
+Ohne SSH-Zugang (z. B. „Skript ausführen“ in Plesk) funktioniert die Eingabe nicht. Dann
+`APP_PASSWORD=…` in die `.env` eintragen und die App starten. Ist noch kein Passwort gespeichert,
+übernimmt sie es beim Start. Danach die Zeile wieder entfernen.
 
 ### 4. App starten
 
@@ -68,6 +70,11 @@ Alternativ setzt du beim ersten Start `APP_PASSWORD=…` und entfernst den Wert 
 | Umgebungsvariablen | wie in `.env.example` (oder `.env`-Datei im Projektordner) |
 
 Danach „NPM install“ und „App neu starten“ klicken. Der Port wird automatisch gesetzt.
+
+**Wichtig bei Plesk:** Den **Dokumentenstamm** auf einen leeren Unterordner setzen, z. B. `/zeiterfassung/webroot`,
+nicht auf `public`. Liegen dort Dateien, liefert der Webserver sie an der App vorbei aus. Dann fehlen
+Sicherheits-Header und App-Updates kommen nicht auf den Geräten an. Den Projektordner auch nicht in
+`httpdocs` legen, sonst wäre die `.env` womöglich von außen abrufbar.
 
 **Eigener Server / VPS:** mit systemd oder pm2 starten und einen Reverse Proxy mit HTTPS davorsetzen.
 

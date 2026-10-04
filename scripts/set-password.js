@@ -3,8 +3,16 @@ import '../server/env.js';
 import readline from 'node:readline';
 import { Writable } from 'node:stream';
 import { config } from '../server/config.js';
-import { openDb } from '../server/db.js';
-import { setPassword } from '../server/auth.js';
+
+let openDb, setPassword;
+try {
+  ({ openDb } = await import('../server/db.js'));
+  ({ setPassword } = await import('../server/auth.js'));
+} catch (err) {
+  if (err.code !== 'ERR_MODULE_NOT_FOUND') throw err;
+  console.error('Abhängigkeiten fehlen. Bitte zuerst "npm install" ausführen (in Plesk: Node.js → "NPM install").');
+  process.exit(1);
+}
 
 function ask(question) {
   // Eingabe nicht im Terminal anzeigen
@@ -15,6 +23,16 @@ function ask(question) {
     rl.question(question, (answer) => { rl.close(); process.stdout.write('\n'); resolve(answer); });
     muted = true;
   });
+}
+
+if (!process.argv[2] && !process.stdin.isTTY) {
+  console.error([
+    'Keine Eingabe möglich (kein Terminal, z. B. "Skript ausführen" in Plesk).',
+    'Alternativen:',
+    '  • In der .env APP_PASSWORD=… eintragen, App neu starten, Zeile danach wieder entfernen',
+    '  • per SSH im Terminal "npm run set-password" ausführen',
+  ].join('\n'));
+  process.exit(1);
 }
 
 const password = process.argv[2] ?? (await ask('Neues Passwort: '));
