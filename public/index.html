@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f6feb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Zeiten">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Zeiterfassung</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Zeiterfassung</h1>
+    <button id="sync-status" class="sync" type="button" title="Synchronisieren"></button>
+  </header>
+
+  <main>
+    <section id="timer" class="card timer" aria-live="polite"></section>
+
+    <nav class="tabs" id="tabs">
+      <button type="button" data-tab="entries" class="active">Einträge</button>
+      <button type="button" data-tab="report">Auswertung</button>
+      <button type="button" data-tab="customers">Kunden</button>
+      <button type="button" data-tab="settings">Einstellungen</button>
+    </nav>
+
+    <section id="view"></section>
+  </main>
+
+  <dialog id="entry-dialog">
+    <form method="dialog" id="entry-form" class="dialog-form">
+      <h2 id="entry-title">Eintrag</h2>
+      <label>Kunde
+        <select name="customer_id" required></select>
+      </label>
+      <label>Datum
+        <input type="date" name="date" required>
+      </label>
+      <div class="row">
+        <label>Start
+          <input type="time" name="start" required>
+        </label>
+        <label>Ende
+          <input type="time" name="end">
+        </label>
+        <label>Dauer
+          <input type="text" name="duration" inputmode="decimal" placeholder="h:mm" autocomplete="off">
+        </label>
+      </div>
+      <label class="check" id="running-wrap"><input type="checkbox" name="running"> Läuft noch</label>
+      <p class="hint" id="entry-hint"></p>
+      <label>Notiz
+        <textarea name="note" rows="2" maxlength="2000" placeholder="optional"></textarea>
+      </label>
+      <p class="error" id="entry-error"></p>
+      <div class="actions">
+        <button type="button" class="danger ghost" id="entry-delete">Löschen</button>
+        <span class="spacer"></span>
+        <button type="button" class="ghost" value="cancel" id="entry-cancel">Abbrechen</button>
+        <button type="submit" class="primary" value="save">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="prompt-dialog">
+    <form method="dialog" id="prompt-form" class="dialog-form">
+      <h2 id="prompt-title"></h2>
+      <p id="prompt-text" class="hint"></p>
+      <input type="text" name="value" id="prompt-input" maxlength="200" autocomplete="off">
+      <div class="actions">
+        <span class="spacer"></span>
+        <button type="button" class="ghost" id="prompt-cancel">Abbrechen</button>
+        <button type="submit" class="primary" id="prompt-ok">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="login" class="login" hidden>
+    <form id="login-form" class="card">
+      <h2>Zeiterfassung</h2>
+      <input type="text" name="username" autocomplete="username" value="zeiterfassung" hidden>
+      <label>Passwort
+        <input type="password" name="password" autocomplete="current-password" required autofocus>
+      </label>
+      <p class="error" id="login-error"></p>
+      <button type="submit" class="primary big">Anmelden</button>
+      <p class="hint">Du bleibst auf diesem Gerät dauerhaft angemeldet.</p>
+    </form>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+</body>
+</html>

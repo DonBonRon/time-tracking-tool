@@ -1,0 +1,22 @@
+{
+  "name": "time-tracking-tool",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Einfache Zeiterfassung für Kundenzeiten (Single-User, PWA, offline-fähig)",
+  "type": "module",
+  "main": "app.cjs",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "COOKIE_SECURE=false node --watch server/index.js",
+    "set-password": "node scripts/set-password.js",
+    "test": "TZ=Europe/Berlin node --test --test-concurrency=1 test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "mysql2": "^3.24.5",
+    "nodemailer": "^10.0.14"
+  }
+}
