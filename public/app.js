@@ -355,10 +355,47 @@ function updateDialogHint() {
   const t = formTimes(f);
   const hint = $('#entry-hint');
   f.end.disabled = f.duration.disabled = f.running.checked;
+  updateRoundButtons(t);
   if (!t || t.end === undefined) { hint.textContent = ''; return; }
   if (t.end === null) { hint.textContent = `Läuft seit ${formatDuration(Date.now() - t.start)} h`; return; }
   hint.textContent = toDateInput(t.end) !== toDateInput(t.start) ? `Endet am nächsten Tag (${formatDate(t.end)})` : '';
   if (document.activeElement !== f.duration) f.duration.value = formatDuration(t.end - t.start);
+}
+
+// Buttons zum Ab-/Aufrunden der Dauer auf volle Stunden (Start bleibt, Ende wird angepasst).
+// Liegt die Dauer schon auf einer vollen Stunde, gehen sie eine Stunde runter bzw. hoch.
+const HOUR = 3600 * 1000;
+function roundedDurations(t) {
+  const ms = t.end - t.start;
+  const full = ms % HOUR === 0;
+  return {
+    ms,
+    down: full ? ms - HOUR : Math.floor(ms / HOUR) * HOUR,
+    up: full ? ms + HOUR : Math.ceil(ms / HOUR) * HOUR,
+  };
+}
+
+function updateRoundButtons(t) {
+  const row = $('#round-row');
+  row.hidden = !t || t.end == null;
+  if (row.hidden) return;
+  const { ms, down, up } = roundedDurations(t);
+  const btnDown = $('#round-down');
+  const btnUp = $('#round-up');
+  btnDown.textContent = `↓ ${formatDuration(down)}`;
+  btnUp.textContent = `↑ ${formatDuration(up)}`;
+  btnDown.disabled = down <= 0;
+  btnUp.disabled = up >= DAY;
+}
+
+function roundDialogDuration(direction) {
+  const f = $('#entry-form');
+  const t = formTimes(f);
+  if (!t || t.end == null) return;
+  const target = roundedDurations(t)[direction];
+  f.end.value = toTimeInput(t.start + target);
+  f.duration.value = formatDuration(target);
+  updateDialogHint();
 }
 
 function openEntryDialog(entry) {
@@ -593,6 +630,8 @@ entryForm.addEventListener('submit', (ev) => {
   if (saveEntryDialog()) dlg().close();
 });
 $('#entry-cancel').addEventListener('click', () => dlg().close());
+$('#round-down').addEventListener('click', () => roundDialogDuration('down'));
+$('#round-up').addEventListener('click', () => roundDialogDuration('up'));
 $('#entry-delete').addEventListener('click', () => {
   const id = editing;
   dlg().close();

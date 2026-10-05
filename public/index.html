@@ -50,9 +50,15 @@
         <label>Ende
           <input type="time" name="end">
         </label>
+      </div>
+      <div class="duration-row">
         <label>Dauer
           <input type="text" name="duration" inputmode="decimal" placeholder="h:mm" autocomplete="off">
         </label>
+        <div class="round-buttons" id="round-row">
+          <button type="button" id="round-down" title="Auf volle Stunde abrunden" aria-label="Auf volle Stunde abrunden"></button>
+          <button type="button" id="round-up" title="Auf volle Stunde aufrunden" aria-label="Auf volle Stunde aufrunden"></button>
+        </div>
       </div>
       <label class="check" id="running-wrap"><input type="checkbox" name="running"> Läuft noch</label>
       <p class="hint" id="entry-hint"></p>

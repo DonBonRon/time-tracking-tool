@@ -323,8 +323,15 @@ dialog {
 dialog::backdrop { background: rgb(0 0 0 / 45%); }
 .dialog-form { padding: 20px; }
 .dialog-form h2 { margin-bottom: 16px; }
-.row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-.actions { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.row input { min-width: 0; }
+.duration-row { display: flex; align-items: flex-end; gap: 8px; }
+.duration-row label { flex: 1; min-width: 5.5em; }
+.round-buttons { display: flex; gap: 6px; margin-bottom: 12px; }
+.round-buttons[hidden] { display: none; }
+.round-buttons button { min-height: 44px; padding: 8px 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; align-items: center; margin-top: 8px; }
+.actions .ghost { padding-left: 8px; padding-right: 8px; }
 #prompt-input { margin-bottom: 12px; }
 
 /* ---------- Login ---------- */
