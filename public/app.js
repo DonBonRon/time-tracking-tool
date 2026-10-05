@@ -99,6 +99,10 @@ function renderTimer() {
           <input type="text" id="start-note" class="note" placeholder="Notiz (optional)" maxlength="2000">`;
       }
     }
+  } else if (running) {
+    // Notiz aktualisieren, falls sie anderswo geändert wurde (Sync) – aber nie während der Eingabe
+    const input = $('#running-note');
+    if (input && document.activeElement !== input && !pendingNote && input.value !== running.note) input.value = running.note;
   }
   tick();
 }
@@ -410,12 +414,13 @@ function download(filename, content, type = 'text/csv;charset=utf-8') {
 // ---------------------------------------------------------------- Aktionen
 const actions = {
   'goto-customers': () => setTab('customers'),
-  'quick-start': (el) => { store.start(el.dataset.id); },
+  'quick-start': (el) => { store.start(el.dataset.id, $('#start-note')?.value.trim() ?? ''); },
   start: () => {
     const id = $('#start-customer')?.value;
     if (id) store.start(id, $('#start-note')?.value.trim() ?? '');
   },
   stop: () => {
+    flushNote();
     const e = store.stop();
     if (e) toast(`Gestoppt: ${formatDuration(e.end - e.start)} h für ${store.customer(e.customer_id)?.name ?? ''}`, {
       action: 'Weiterlaufen', onAction: () => store.saveEntry({ id: e.id, end: null }), duration: 6000,
@@ -543,14 +548,28 @@ $('#view').addEventListener('submit', (ev) => {
   toast(`${name} angelegt`);
 });
 
-// Notiz des laufenden Timers speichern (verzögert beim Tippen)
+// Notiz des laufenden Timers speichern: verzögert beim Tippen, sofort beim Verlassen des Feldes,
+// beim Stoppen und wenn die App in den Hintergrund geht (iOS beendet Hintergrund-Apps ohne Vorwarnung)
 let noteTimer;
+let pendingNote = null; // { id, value }
+function flushNote() {
+  clearTimeout(noteTimer);
+  if (!pendingNote) return;
+  const { id, value } = pendingNote;
+  pendingNote = null;
+  const entry = store.state.entries[id];
+  if (entry && entry.note !== value) store.saveEntry({ id, note: value });
+}
 $('#timer').addEventListener('input', (ev) => {
   if (ev.target.id !== 'running-note') return;
-  clearTimeout(noteTimer);
   const id = store.running?.id;
-  const value = ev.target.value;
-  noteTimer = setTimeout(() => { if (id) store.saveEntry({ id, note: value.trim() }); }, 600);
+  if (!id) return;
+  pendingNote = { id, value: ev.target.value.trim() };
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(flushNote, 600);
+});
+$('#timer').addEventListener('focusout', (ev) => {
+  if (ev.target.id === 'running-note') flushNote();
 });
 $('#timer').addEventListener('keydown', (ev) => {
   if (ev.key === 'Enter' && ev.target.id === 'start-note') actions.start();
@@ -612,8 +631,12 @@ setInterval(() => { if (store.running) renderView(); }, 60000);
 setInterval(() => store.sync(), 2 * 60000);
 window.addEventListener('online', () => store.sync());
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') { store.sync(); render(); }
+  if (document.visibilityState === 'visible') { store.sync(); render(); return; }
+  flushNote();
+  store.flush();
+  store.sync();
 });
+window.addEventListener('pagehide', () => { flushNote(); store.flush(); });
 
 if ('serviceWorker' in navigator) {
   const hadController = Boolean(navigator.serviceWorker.controller);

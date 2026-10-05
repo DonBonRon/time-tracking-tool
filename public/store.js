@@ -88,6 +88,12 @@ class Store extends EventTarget {
     this.#saveTimer = setTimeout(() => kvSet(STATE_KEY, this.state), 50);
   }
 
+  /** Sofort lokal speichern, z. B. bevor die App in den Hintergrund geht. */
+  flush() {
+    clearTimeout(this.#saveTimer);
+    return kvSet(STATE_KEY, this.state);
+  }
+
   /** Zeitstempel für Änderungen – an die Serveruhr angeglichen, damit zwei Geräte vergleichbar sind. */
   #stamp(prev) {
     const t = Date.now() + (this.state.clockOffset || 0);
@@ -136,12 +142,17 @@ class Store extends EventTarget {
     return rec;
   }
 
+  // Standardwerte nur für neue Datensätze – bei Änderungen bleiben alle nicht übergebenen Felder erhalten
   saveCustomer(data) {
-    return this.#put('customers', { archived: false, deleted: false, ...data, id: data.id ?? newId() });
+    const id = data.id ?? newId();
+    const defaults = this.state.customers[id] ? {} : { archived: false, deleted: false };
+    return this.#put('customers', { ...defaults, ...data, id });
   }
 
   saveEntry(data) {
-    return this.#put('entries', { note: '', end: null, deleted: false, ...data, id: data.id ?? newId() });
+    const id = data.id ?? newId();
+    const defaults = this.state.entries[id] ? {} : { note: '', end: null, deleted: false };
+    return this.#put('entries', { ...defaults, ...data, id });
   }
 
   deleteEntry(id) {
