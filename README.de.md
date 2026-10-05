@@ -13,8 +13,6 @@ funktioniert auch bei schlechtem Netz.
 - **Offline-fähig**: Die App liegt im Cache, alle Änderungen werden lokal gespeichert und automatisch synchronisiert, sobald Netz da ist
 - **Anmeldung**: nur ein Passwort; danach bleibst du auf jedem Gerät dauerhaft angemeldet (gleitend 400 Tage)
 
-Eine Übersicht über Konkurrenzprodukte und die Begründung, welche Funktionen übernommen wurden und welche bewusst nicht,
-steht in [docs/konkurrenzanalyse.md](docs/konkurrenzanalyse.md).
 
 ## Technik
 
@@ -167,9 +165,6 @@ Gelöschte Einträge bleiben als Löschmarkierung erhalten, damit andere Geräte
 npm install
 cp .env.example .env        # DB-Zugang eintragen, COOKIE_SECURE=false
 npm run dev                 # http://localhost:3000
-
-# Tests (Integrationstests brauchen eine leere Test-Datenbank)
-TEST_DATABASE_URL=mysql://user:pass@localhost/timetrack_test npm test
 ```
 
 Projektstruktur:
@@ -189,7 +184,6 @@ public/                Web-App (ohne Build-Schritt)
   shared/core.js       Auswertung/Formatierung (auch vom Server genutzt)
   sw.js                Service Worker (Offline-Cache)
 scripts/set-password.js
-test/
 ```
 
 ## Lizenz

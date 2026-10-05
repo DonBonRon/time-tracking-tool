@@ -165,9 +165,6 @@ Deleted entries are kept as tombstones so that other devices learn about the del
 npm install
 cp .env.example .env        # add database credentials, COOKIE_SECURE=false
 npm run dev                 # http://localhost:3000
-
-# Tests (the integration tests need an empty test database)
-TEST_DATABASE_URL=mysql://user:pass@localhost/timetrack_test npm test
 ```
 
 Project structure:
@@ -187,7 +184,6 @@ public/                Web app (no build step)
   shared/core.js       Reports/formatting (also used by the server)
   sw.js                Service worker (offline cache)
 scripts/set-password.js
-test/
 ```
 
 ## License

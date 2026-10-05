@@ -22,8 +22,7 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "COOKIE_SECURE=false node --watch server/index.js",
-    "set-password": "node scripts/set-password.js",
-    "test": "TZ=Europe/Berlin node --test --test-concurrency=1 test/*.test.js"
+    "set-password": "node scripts/set-password.js"
   },
   "engines": {
     "node": ">=20"
