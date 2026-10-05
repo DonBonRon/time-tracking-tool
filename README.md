@@ -15,10 +15,6 @@ and it keeps working on a weak or missing network connection.
 
 > **Note:** The user interface, emails and CSV export are currently in **German** only.
 
-For a comparison with other tools (Toggl Track, Clockify, Harvest, Kimai, solidtime …) and the reasoning
-behind which features were included and which were deliberately left out, see
-[docs/konkurrenzanalyse.md](docs/konkurrenzanalyse.md) (German).
-
 ## Tech stack
 
 | | |
