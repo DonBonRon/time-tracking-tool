@@ -3,7 +3,7 @@
 // Dadurch ändert sich diese Datei und alle Geräte laden die neue Version – auch wenn der
 // Webserver die Dateien direkt ausliefert. Läuft die Auslieferung über Node, ersetzt der Server
 // den Platzhalter BUILD zusätzlich durch einen Hash über alle Dateien.
-const RELEASE = '1.1.0';
+const RELEASE = '1.1.1';
 const BUILD = '__VERSION__';
 const CACHE = `tt-${RELEASE}-${BUILD}`;
 const SHELL = [

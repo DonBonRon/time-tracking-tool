@@ -6,7 +6,7 @@ import {
 } from './shared/core.js';
 
 // Bei jeder Änderung an der Web-App erhöhen (gleicher Wert wie RELEASE in sw.js)
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);

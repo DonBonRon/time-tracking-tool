@@ -148,6 +148,19 @@ input[type="checkbox"] { width: 20px; height: 20px; min-height: 0; margin: 0; ac
 
 label { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 12px; }
 label > input, label > select, label > textarea { margin-top: 4px; color: var(--text); }
+
+/* iOS Safari gibt Datums-/Zeitfeldern eine eigene Mindestbreite und ignoriert width: 100% –
+   ohne native Optik halten sie sich an die Breite (der Picker öffnet sich trotzdem) */
+input[type="date"], input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
 label.check { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 1rem; }
 
 .muted { color: var(--muted); }
@@ -322,12 +335,13 @@ dialog {
   background: var(--card);
   color: var(--text);
   box-shadow: 0 10px 40px rgb(0 0 0 / 30%);
+  overflow-x: hidden;
 }
 dialog::backdrop { background: rgb(0 0 0 / 45%); }
 .dialog-form { padding: 20px; }
 .dialog-form h2 { margin-bottom: 16px; }
 .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.row input { min-width: 0; }
+.row > label, .row input { min-width: 0; }
 .field { margin-bottom: 12px; }
 .field-label { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 4px; }
 .stepper { display: flex; max-width: 220px; }
