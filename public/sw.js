@@ -1,8 +1,11 @@
 // Service Worker: App-Shell offline verfügbar machen.
-// Der Platzhalter für VERSION wird vom Server durch einen Hash über alle Dateien ersetzt,
-// dadurch wird nach jedem Update automatisch neu gecacht.
-const VERSION = '__VERSION__';
-const CACHE = `tt-${VERSION}`;
+// RELEASE bei jeder Änderung an der Web-App erhöhen (gleicher Wert wie APP_VERSION in app.js).
+// Dadurch ändert sich diese Datei und alle Geräte laden die neue Version – auch wenn der
+// Webserver die Dateien direkt ausliefert. Läuft die Auslieferung über Node, ersetzt der Server
+// den Platzhalter BUILD zusätzlich durch einen Hash über alle Dateien.
+const RELEASE = '1.1.0';
+const BUILD = '__VERSION__';
+const CACHE = `tt-${RELEASE}-${BUILD}`;
 const SHELL = [
   './', 'index.html', 'styles.css', 'app.js', 'store.js', 'shared/core.js',
   'manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-192.png', 'icon-512.png',

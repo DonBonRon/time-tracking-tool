@@ -139,6 +139,7 @@ Deine Daten liegen in jedem Fall auf dem Server.
 - **Vergessen zu starten?** Timer starten, dann „Bearbeiten“ und die Startzeit zurücksetzen.
 - **Vergessen zu stoppen?** Eintrag antippen und Ende oder Dauer korrigieren.
 - **Nachtragen:** „+ Zeit nachtragen“. Dauer als `1:30` oder `1,5` eingeben, die Endzeit wird automatisch berechnet.
+- **Runden:** Mit − / + neben der Dauer springst du zur vorherigen bzw. nächsten halben Stunde (0:23 → 0:30 → 1:00 → 1:30 …). Die Startzeit bleibt, das Ende wird angepasst.
 - **Auswertung:** Mit ‹ › zwischen Monaten wechseln. Klick auf einen Kunden zeigt dessen Einträge.
 - **Sync-Anzeige oben rechts:** grün = synchron, gelb = Änderungen ausstehend, grau = offline. Antippen synchronisiert sofort.
 
@@ -166,6 +167,9 @@ npm install
 cp .env.example .env        # DB-Zugang eintragen, COOKIE_SECURE=false
 npm run dev                 # http://localhost:3000
 ```
+
+Bei Änderungen in `public/` bitte `APP_VERSION` in `public/app.js` und `RELEASE` in `public/sw.js` erhöhen
+(gleicher Wert). Daran erkennen installierte Apps das Update, auch wenn der Webserver die Dateien direkt ausliefert.
 
 Projektstruktur:
 

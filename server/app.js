@@ -8,6 +8,7 @@ import { createAuth } from './auth.js';
 import { sendMail } from './mailer.js';
 import { buildReportMail } from './report-mail.js';
 import { runJobs } from './jobs.js';
+import { CUSTOMER_FIELDS, ENTRY_FIELDS } from './db.js';
 
 const publicDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../public');
 const MAX_BATCH = 5000;
@@ -26,10 +27,16 @@ function validEntry(e) {
     && (e.note == null || (typeof e.note === 'string' && e.note.length <= 2000)) && isTs(e.updated_at);
 }
 
-const normCustomer = (c) => ({ id: c.id, name: c.name.trim(), archived: Boolean(c.archived), deleted: Boolean(c.deleted), updated_at: c.updated_at });
+// Optional: Liste der geänderten Felder (nur bekannte Feldnamen, sonst gelten alle als geändert)
+const normFields = (fields, allowed) => (Array.isArray(fields) ? allowed.filter((f) => fields.includes(f)) : undefined);
+
+const normCustomer = (c) => ({
+  id: c.id, name: c.name.trim(), archived: Boolean(c.archived), deleted: Boolean(c.deleted), updated_at: c.updated_at,
+  fields: normFields(c.fields, CUSTOMER_FIELDS),
+});
 const normEntry = (e) => ({
   id: e.id, customer_id: e.customer_id, start: e.start, end: e.end ?? null, note: e.note ?? '',
-  deleted: Boolean(e.deleted), updated_at: e.updated_at,
+  deleted: Boolean(e.deleted), updated_at: e.updated_at, fields: normFields(e.fields, ENTRY_FIELDS),
 });
 
 function safeEqual(a, b) {
@@ -134,7 +141,7 @@ export function createApp(store, { log = console } = {}) {
 
     const applied = await store.applyChanges({ customers: customers.map(normCustomer), entries: entries.map(normEntry) });
     const rev = await store.currentRev();
-    const delta = await store.changesSince(since);
+    const delta = await store.changesSince(since, { customerIds: customers.map((c) => c.id), entryIds: entries.map((e) => e.id) });
     res.json({ rev, applied, ...delta, serverTime: Date.now() });
   }));
 

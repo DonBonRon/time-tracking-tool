@@ -34,6 +34,9 @@
 
 * { box-sizing: border-box; }
 
+/* hidden-Attribut immer respektieren, auch bei Elementen mit eigenem display-Wert */
+[hidden] { display: none !important; }
+
 html { -webkit-text-size-adjust: 100%; }
 
 body {
@@ -325,11 +328,16 @@ dialog::backdrop { background: rgb(0 0 0 / 45%); }
 .dialog-form h2 { margin-bottom: 16px; }
 .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .row input { min-width: 0; }
-.duration-row { display: flex; align-items: flex-end; gap: 8px; }
-.duration-row label { flex: 1; min-width: 5.5em; }
-.round-buttons { display: flex; gap: 6px; margin-bottom: 12px; }
-.round-buttons[hidden] { display: none; }
-.round-buttons button { min-height: 44px; padding: 8px 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.field { margin-bottom: 12px; }
+.field-label { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 4px; }
+.stepper { display: flex; max-width: 220px; }
+.stepper input { flex: 1; min-width: 0; text-align: center; border-radius: 0; border-left: none; border-right: none; font-variant-numeric: tabular-nums; }
+.stepper button { flex: none; width: 48px; min-height: 44px; padding: 0; font-size: 1.3rem; line-height: 1; }
+.stepper button:first-child { border-radius: 10px 0 0 10px; }
+.stepper button:last-child { border-radius: 0 10px 10px 0; }
+.dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -6px -8px 12px 0; }
+.dialog-head h2 { margin: 0; }
+.dialog-head .icon { font-size: 1.1rem; color: var(--muted); }
 .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; align-items: center; margin-top: 8px; }
 .actions .ghost { padding-left: 8px; padding-right: 8px; }
 #prompt-input { margin-bottom: 12px; }

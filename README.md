@@ -139,6 +139,7 @@ for 7 days, but this rule doesn't apply to installed apps. Your data is always s
 - **Forgot to start?** Start the timer, tap "Bearbeiten" (edit) and move the start time back.
 - **Forgot to stop?** Tap the entry and correct the end time or duration.
 - **Add time:** "+ Zeit nachtragen". Enter the duration as `1:30` or `1,5` and the end time is calculated for you.
+- **Round:** use − / + next to the duration to jump to the previous or next half hour (0:23 → 0:30 → 1:00 → 1:30 …). The start time stays, the end time is adjusted.
 - **Reports:** switch months with ‹ ›. Click a client to see their entries.
 - **Sync indicator (top right):** green = in sync, yellow = changes pending, grey = offline. Tap it to sync immediately.
 
@@ -166,6 +167,9 @@ npm install
 cp .env.example .env        # add database credentials, COOKIE_SECURE=false
 npm run dev                 # http://localhost:3000
 ```
+
+When you change anything in `public/`, bump `APP_VERSION` in `public/app.js` and `RELEASE` in `public/sw.js`
+(same value). That's how installed apps detect the update, even if the web server serves the files directly.
 
 Project structure:
 

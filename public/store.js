@@ -135,7 +135,12 @@ class Store extends EventTarget {
     const prev = this.state[kind][record.id];
     const rec = { ...prev, ...record, updated_at: this.#stamp(prev) };
     this.state[kind][rec.id] = rec;
-    this.state.pending[kind][rec.id] = rec;
+    // Nur die tatsächlich geänderten Felder übertragen, damit ein Gerät mit veraltetem Stand
+    // keine Änderungen anderer Geräte überschreibt (z. B. Stopp am PC, Notiz am Handy)
+    const changed = Object.keys(record).filter((f) => f !== 'id' && (!prev || prev[f] !== record[f]));
+    const before = this.state.pending[kind][rec.id]?.fields ?? [];
+    const fields = prev ? [...new Set([...before, ...changed])] : Object.keys(rec).filter((f) => f !== 'id' && f !== 'updated_at');
+    this.state.pending[kind][rec.id] = { ...rec, fields };
     this.#persist();
     this.#emit();
     this.scheduleSync(300);
@@ -220,10 +225,13 @@ class Store extends EventTarget {
           if (this.state.pending[kind][rec.id]?.updated_at === rec.updated_at) delete this.state.pending[kind][rec.id];
         }
         for (const rec of data[kind]) {
+          // Server-Stand übernehmen; noch nicht übertragene lokale Felder bleiben erhalten
           const pending = this.state.pending[kind][rec.id];
-          if (pending && pending.updated_at > rec.updated_at) continue;
-          const local = this.state[kind][rec.id];
-          if (!local || local.updated_at <= rec.updated_at) this.state[kind][rec.id] = rec;
+          const local = { ...rec };
+          // (Warteschlangen-Einträge älterer App-Versionen haben keine Feldliste: dann alle Felder behalten)
+          if (pending) for (const f of pending.fields ?? Object.keys(pending)) if (f !== 'fields') local[f] = pending[f];
+          if (pending) local.updated_at = Math.max(pending.updated_at, rec.updated_at);
+          this.state[kind][rec.id] = local;
         }
       }
       this.state.rev = data.rev;

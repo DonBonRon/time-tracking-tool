@@ -64,10 +64,53 @@ const toCustomer = (r) => ({
   updated_at: num(r.updated_at), rev: num(r.rev),
 });
 
+export const CUSTOMER_FIELDS = ['name', 'archived', 'deleted'];
+export const ENTRY_FIELDS = ['customer_id', 'start', 'end', 'note', 'deleted'];
+
+/**
+ * Feldweises Zusammenführen: Ein Feld vom Gerät wird übernommen, wenn es neuer ist als der letzte
+ * Stand genau dieses Feldes auf dem Server. Gibt null zurück, wenn sich nichts ändert.
+ */
+export function mergeRecord(cur, incoming, allFields) {
+  const changed = Array.isArray(incoming.fields) ? allFields.filter((f) => incoming.fields.includes(f)) : allFields;
+  const ts = incoming.updated_at;
+  if (!cur) {
+    const fieldTs = Object.fromEntries(allFields.map((f) => [f, ts]));
+    return { rec: { ...incoming, updated_at: ts }, fieldTs: JSON.stringify(fieldTs) };
+  }
+  let fieldTs = {};
+  try { fieldTs = JSON.parse(cur.field_ts || '{}') ?? {}; } catch { fieldTs = {}; }
+  // Einträge aus älteren Versionen haben keine Feld-Zeitstempel: einmalig mit dem bisherigen Stand belegen
+  for (const f of allFields) fieldTs[f] ??= cur.updated_at;
+  const rec = { ...cur };
+  let any = false;
+  for (const f of changed) {
+    if (ts > fieldTs[f]) {
+      rec[f] = incoming[f];
+      fieldTs[f] = ts;
+      any = true;
+    }
+  }
+  if (!any) return null;
+  rec.updated_at = Math.max(cur.updated_at, ts);
+  delete rec.field_ts;
+  return { rec, fieldTs: JSON.stringify(fieldTs) };
+}
+
+async function ensureColumn(pool, table, column, ddl) {
+  const [rows] = await pool.query(
+    'SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?',
+    [table, column],
+  );
+  if (!rows.length) await pool.query(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+}
+
 export async function openDb(dbConfig) {
   const opts = dbConfig.uri ? { uri: dbConfig.uri } : { ...dbConfig };
   const pool = mysql.createPool({ ...opts, connectionLimit: 5, charset: 'utf8mb4', supportBigNumbers: true });
   for (const stmt of SCHEMA) await pool.query(stmt);
+  await ensureColumn(pool, 'customers', 'field_ts', 'field_ts TEXT NULL');
+  await ensureColumn(pool, 'entries', 'field_ts', 'field_ts TEXT NULL');
   return new Store(pool);
 }
 
@@ -102,10 +145,9 @@ export class Store {
   }
 
   async kvSet(key, value) {
-    await this.pool.query(
-      'INSERT INTO kv (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)',
-      [key, JSON.stringify(value)],
-    );
+    const json = JSON.stringify(value);
+    const [res] = await this.pool.query('INSERT IGNORE INTO kv (`key`, value) VALUES (?, ?)', [key, json]);
+    if (!res.affectedRows) await this.pool.query('UPDATE kv SET value = ? WHERE `key` = ?', [json, key]);
   }
 
   async getSettings() {
@@ -138,48 +180,70 @@ export class Store {
     return Number(rows[0].rev);
   }
 
-  async changesSince(rev) {
-    const [customers] = await this.pool.query(`SELECT ${CUSTOMER_COLS} FROM customers WHERE rev > ?`, [rev]);
-    const [entries] = await this.pool.query(`SELECT ${ENTRY_COLS} FROM entries WHERE rev > ?`, [rev]);
-    return { customers: customers.map(toCustomer), entries: entries.map(toEntry) };
+  /**
+   * Alle Änderungen seit `rev` – plus den aktuellen Stand der Datensätze mit den übergebenen IDs,
+   * damit ein Gerät auch dann den Server-Stand erhält, wenn seine Änderung abgelehnt wurde.
+   */
+  async changesSince(rev, { customerIds = [], entryIds = [] } = {}) {
+    const query = async (table, cols, ids, map) => {
+      const [rows] = ids.length
+        ? await this.pool.query(`SELECT ${cols} FROM ${table} WHERE rev > ? OR id IN (?)`, [rev, ids])
+        : await this.pool.query(`SELECT ${cols} FROM ${table} WHERE rev > ?`, [rev]);
+      return rows.map(map);
+    };
+    return {
+      customers: await query('customers', CUSTOMER_COLS, customerIds, toCustomer),
+      entries: await query('entries', ENTRY_COLS, entryIds, toEntry),
+    };
   }
 
   /**
-   * Änderungen vom Client übernehmen (Last-Write-Wins anhand updated_at).
-   * Gibt die Anzahl übernommener Datensätze zurück.
+   * Änderungen vom Client übernehmen – feldweise Last-Write-Wins.
+   * Geräte schicken in `fields` nur die Felder, die sie geändert haben. Jedes Feld hat einen eigenen
+   * Zeitstempel (field_ts), damit z. B. ein Stopp auf dem PC nicht die Notiz vom Handy überschreibt.
+   * Fehlt `fields` (ältere App-Version), gelten alle Felder als geändert.
+   * Gibt die Anzahl geänderter Datensätze zurück.
    */
   async applyChanges({ customers = [], entries = [] }) {
     return this.tx(async (conn) => {
       let applied = 0;
       for (const c of customers) {
-        const [rows] = await conn.query('SELECT updated_at FROM customers WHERE id = ? FOR UPDATE', [c.id]);
-        if (rows.length && Number(rows[0].updated_at) >= c.updated_at) continue;
+        const [rows] = await conn.query(`SELECT ${CUSTOMER_COLS}, field_ts FROM customers WHERE id = ? FOR UPDATE`, [c.id]);
+        const merged = mergeRecord(rows[0] && { ...toCustomer(rows[0]), field_ts: rows[0].field_ts }, c, CUSTOMER_FIELDS);
+        if (!merged) continue;
         const rev = await Store.nextRev(conn);
-        await conn.query(
-          `INSERT INTO customers (id, name, archived, deleted, updated_at, rev) VALUES (?, ?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE name = VALUES(name), archived = VALUES(archived), deleted = VALUES(deleted),
-             updated_at = VALUES(updated_at), rev = VALUES(rev)`,
-          [c.id, c.name, c.archived ? 1 : 0, c.deleted ? 1 : 0, c.updated_at, rev],
-        );
+        const values = [merged.rec.name, merged.rec.archived ? 1 : 0, merged.rec.deleted ? 1 : 0, merged.rec.updated_at, rev, merged.fieldTs];
+        if (rows.length) {
+          await conn.query('UPDATE customers SET name = ?, archived = ?, deleted = ?, updated_at = ?, rev = ?, field_ts = ? WHERE id = ?', [...values, c.id]);
+        } else {
+          await conn.query('INSERT INTO customers (name, archived, deleted, updated_at, rev, field_ts, id) VALUES (?, ?, ?, ?, ?, ?, ?)', [...values, c.id]);
+        }
         applied++;
       }
       for (const e of entries) {
-        const [rows] = await conn.query(
-          'SELECT updated_at, `start`, reminder_sent_at FROM entries WHERE id = ? FOR UPDATE', [e.id],
-        );
-        if (rows.length && Number(rows[0].updated_at) >= e.updated_at) continue;
-        // Erinnerung zurücksetzen, wenn die Startzeit eines laufenden Timers geändert wurde
-        const keepReminder = rows.length && Number(rows[0].start) === e.start && e.end == null;
+        const [rows] = await conn.query(`SELECT ${ENTRY_COLS}, reminder_sent_at, field_ts FROM entries WHERE id = ? FOR UPDATE`, [e.id]);
+        const cur = rows[0] && { ...toEntry(rows[0]), field_ts: rows[0].field_ts };
+        const merged = mergeRecord(cur, e, ENTRY_FIELDS);
+        if (!merged) continue;
+        let next = merged.rec;
+        // Passt die Kombination nicht zusammen (Ende vor Start), gilt der Eintrag des Geräts komplett
+        if (next.end != null && next.end < next.start) next = { ...next, start: e.start, end: e.end };
+        // Erinnerung behalten, solange der Timer mit unveränderter Startzeit läuft
+        const keepReminder = cur && cur.start === next.start && next.end == null;
         const rev = await Store.nextRev(conn);
-        await conn.query(
-          `INSERT INTO entries (id, customer_id, \`start\`, \`end\`, note, deleted, updated_at, rev, reminder_sent_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE customer_id = VALUES(customer_id), \`start\` = VALUES(\`start\`), \`end\` = VALUES(\`end\`),
-             note = VALUES(note), deleted = VALUES(deleted), updated_at = VALUES(updated_at), rev = VALUES(rev),
-             reminder_sent_at = VALUES(reminder_sent_at)`,
-          [e.id, e.customer_id, e.start, e.end, e.note, e.deleted ? 1 : 0, e.updated_at, rev,
-            keepReminder ? rows[0].reminder_sent_at : null],
-        );
+        const values = [next.customer_id, next.start, next.end, next.note ?? '', next.deleted ? 1 : 0, next.updated_at, rev,
+          keepReminder ? rows[0].reminder_sent_at : null, merged.fieldTs];
+        if (rows.length) {
+          await conn.query(
+            'UPDATE entries SET customer_id = ?, `start` = ?, `end` = ?, note = ?, deleted = ?, updated_at = ?, rev = ?, reminder_sent_at = ?, field_ts = ? WHERE id = ?',
+            [...values, e.id],
+          );
+        } else {
+          await conn.query(
+            'INSERT INTO entries (customer_id, `start`, `end`, note, deleted, updated_at, rev, reminder_sent_at, field_ts, id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [...values, e.id],
+          );
+        }
         applied++;
       }
       return applied;

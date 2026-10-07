@@ -36,7 +36,10 @@
 
   <dialog id="entry-dialog">
     <form method="dialog" id="entry-form" class="dialog-form">
-      <h2 id="entry-title">Eintrag</h2>
+      <div class="dialog-head">
+        <h2 id="entry-title">Eintrag</h2>
+        <button type="button" class="ghost icon" id="entry-cancel" aria-label="Schließen" title="Schließen">✕</button>
+      </div>
       <label>Kunde
         <select name="customer_id" required></select>
       </label>
@@ -51,13 +54,12 @@
           <input type="time" name="end">
         </label>
       </div>
-      <div class="duration-row">
-        <label>Dauer
-          <input type="text" name="duration" inputmode="decimal" placeholder="h:mm" autocomplete="off">
-        </label>
-        <div class="round-buttons" id="round-row">
-          <button type="button" id="round-down" title="Auf volle Stunde abrunden" aria-label="Auf volle Stunde abrunden"></button>
-          <button type="button" id="round-up" title="Auf volle Stunde aufrunden" aria-label="Auf volle Stunde aufrunden"></button>
+      <div class="field">
+        <span class="field-label" id="duration-label">Dauer</span>
+        <div class="stepper">
+          <button type="button" id="round-down" title="Auf halbe Stunde abrunden" aria-label="Auf halbe Stunde abrunden">−</button>
+          <input type="text" name="duration" inputmode="decimal" placeholder="h:mm" autocomplete="off" aria-labelledby="duration-label">
+          <button type="button" id="round-up" title="Auf halbe Stunde aufrunden" aria-label="Auf halbe Stunde aufrunden">+</button>
         </div>
       </div>
       <label class="check" id="running-wrap"><input type="checkbox" name="running"> Läuft noch</label>
@@ -67,9 +69,8 @@
       </label>
       <p class="error" id="entry-error"></p>
       <div class="actions">
-        <button type="button" class="danger ghost" id="entry-delete">Löschen</button>
+        <button type="button" class="danger ghost small" id="entry-delete">Löschen</button>
         <span class="spacer"></span>
-        <button type="button" class="ghost" value="cancel" id="entry-cancel">Abbrechen</button>
         <button type="submit" class="primary" value="save">Speichern</button>
       </div>
     </form>

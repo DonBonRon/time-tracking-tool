@@ -5,6 +5,9 @@ import {
   toDateInput, toTimeInput, fromDateTimeInput, WEEKDAYS,
 } from './shared/core.js';
 
+// Bei jeder Änderung an der Web-App erhöhen (gleicher Wert wie RELEASE in sw.js)
+const APP_VERSION = '1.1.0';
+
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const DAY = 24 * 3600 * 1000;
@@ -267,11 +270,13 @@ function renderSettings() {
     <div class="card settings">
       <h3>Daten</h3>
       <p class="hint">Letzte Synchronisation: ${esc(lastSync)}${store.pendingCount ? ` · ${store.pendingCount} Änderung(en) noch nicht übertragen` : ''}</p>
+      ${store.status === 'error' ? `<p class="warn">Sync-Fehler: ${esc(store.lastError ?? 'unbekannt')}</p>` : ''}
       <div class="button-row">
         <button type="button" data-action="export-all">Alle Einträge als CSV</button>
         <button type="button" data-action="resync">Neu vom Server laden</button>
       </div>
-    </div>`;
+    </div>
+    <p class="muted small-text">Version ${APP_VERSION}</p>`;
 }
 
 async function loadSettings() {
@@ -362,30 +367,22 @@ function updateDialogHint() {
   if (document.activeElement !== f.duration) f.duration.value = formatDuration(t.end - t.start);
 }
 
-// Buttons zum Ab-/Aufrunden der Dauer auf volle Stunden (Start bleibt, Ende wird angepasst).
-// Liegt die Dauer schon auf einer vollen Stunde, gehen sie eine Stunde runter bzw. hoch.
-const HOUR = 3600 * 1000;
+// −/+ neben der Dauer: springt zur nächsten halben bzw. vollen Stunde (0:23 → 0:30 → 1:00 → 1:30 …).
+// Die Startzeit bleibt, das Ende wird angepasst.
+const HALF_HOUR = 30 * 60 * 1000;
 function roundedDurations(t) {
   const ms = t.end - t.start;
-  const full = ms % HOUR === 0;
   return {
-    ms,
-    down: full ? ms - HOUR : Math.floor(ms / HOUR) * HOUR,
-    up: full ? ms + HOUR : Math.ceil(ms / HOUR) * HOUR,
+    down: Math.ceil(ms / HALF_HOUR) * HALF_HOUR - HALF_HOUR,
+    up: Math.floor(ms / HALF_HOUR) * HALF_HOUR + HALF_HOUR,
   };
 }
 
 function updateRoundButtons(t) {
-  const row = $('#round-row');
-  row.hidden = !t || t.end == null;
-  if (row.hidden) return;
-  const { ms, down, up } = roundedDurations(t);
-  const btnDown = $('#round-down');
-  const btnUp = $('#round-up');
-  btnDown.textContent = `↓ ${formatDuration(down)}`;
-  btnUp.textContent = `↑ ${formatDuration(up)}`;
-  btnDown.disabled = down <= 0;
-  btnUp.disabled = up >= DAY;
+  const active = Boolean(t && t.end != null);
+  const { down, up } = active ? roundedDurations(t) : {};
+  $('#round-down').disabled = !active || down <= 0;
+  $('#round-up').disabled = !active || up >= DAY;
 }
 
 function roundDialogDuration(direction) {
@@ -553,7 +550,10 @@ $('#tabs').addEventListener('click', (ev) => {
   if (b) setTab(b.dataset.tab);
 });
 
-$('#sync-status').addEventListener('click', () => store.sync());
+$('#sync-status').addEventListener('click', () => {
+  if (store.status === 'error') toast(`Sync-Fehler: ${store.lastError ?? 'unbekannt'}`, { duration: 8000 });
+  store.sync();
+});
 
 $('#view').addEventListener('change', async (ev) => {
   const el = ev.target;
@@ -679,7 +679,12 @@ window.addEventListener('pagehide', () => { flushNote(); store.flush(); });
 
 if ('serviceWorker' in navigator) {
   const hadController = Boolean(navigator.serviceWorker.controller);
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  // updateViaCache: 'none' – sw.js nie aus dem HTTP-Cache, damit neue Versionen sofort erkannt werden
+  const registration = navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => null);
+  // Installierte Apps bleiben oft tagelang offen: beim Zurückkehren nach Updates suchen
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') (await registration)?.update().catch(() => {});
+  });
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (hadController) toast('Neue Version verfügbar', { action: 'Neu laden', onAction: () => location.reload(), duration: 15000 });
   });
