@@ -18,7 +18,7 @@ funktioniert auch bei schlechtem Netz.
 
 | | |
 |---|---|
-| Server | Node.js ≥ 20, Express, MySQL/MariaDB (`mysql2`, kein nativer Build nötig), Nodemailer |
+| Server | Node.js ≥ 22 (immer aktueller Patch-Stand), Express, MySQL/MariaDB (`mysql2`, kein nativer Build nötig), Nodemailer |
 | Frontend | Plain JavaScript, keine Build-Schritte; PWA mit Service Worker und IndexedDB |
 | Abhängigkeiten | 3 npm-Pakete (`express`, `mysql2`, `nodemailer`) |
 
@@ -67,7 +67,7 @@ Ohne SSH-Zugang (z. B. „Skript ausführen“ in Plesk) funktioniert die Eingab
 
 | Einstellung | Wert |
 |---|---|
-| Node.js-Version | 20 oder neuer |
+| Node.js-Version | 22 oder neuer, aktueller Patch-Stand |
 | Anwendungsstamm | Ordner des Projekts |
 | Startdatei | `app.cjs` |
 | Umgebungsvariablen | wie in `.env.example` (oder `.env`-Datei im Projektordner) |

@@ -97,7 +97,10 @@ export function createApp(store, { log = console } = {}) {
   }));
 
   const api = express.Router();
-  api.use(express.json({ limit: '2mb' }));
+  // inflate: false – komprimierte Anfragen (gzip/deflate/Brotli) werden abgelehnt, bevor ein Decoder läuft.
+  // Die App braucht sie nicht, und so ist der Endpunkt vor Fehlern in den Decodern geschützt
+  // (z. B. CVE-2026-111497, Brotli-Decoder in Node.js), auch ohne Anmeldung.
+  api.use(express.json({ limit: '2mb', inflate: false }));
   api.use((req, res, next) => {
     res.set('Cache-Control', 'no-store');
     // CSRF-Schutz zusätzlich zu SameSite=Strict: fremde Origins ablehnen
@@ -180,6 +183,7 @@ export function createApp(store, { log = console } = {}) {
   app.use((err, req, res, next) => {
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Ungültiges JSON.' });
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Anfrage zu groß.' });
+    if (err.type === 'encoding.unsupported') return res.status(415).json({ error: 'Komprimierte Anfragen werden nicht unterstützt.' });
     log.error(err);
     res.status(500).json({ error: err.code === 'EAUTH' || err.responseCode ? `Mailversand fehlgeschlagen: ${err.message}` : 'Interner Fehler.' });
   });

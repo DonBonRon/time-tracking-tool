@@ -1,6 +1,6 @@
 {
   "name": "time-tracking-tool",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "description": "Minimal self-hosted time tracker for client work (single user, offline-capable PWA, Node.js + MySQL)",
   "license": "MIT",
@@ -25,11 +25,11 @@
     "set-password": "node scripts/set-password.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
-    "express": "^5.2.1",
-    "mysql2": "^3.24.5",
-    "nodemailer": "^10.0.14"
+    "express": "^5.3.0",
+    "mysql2": "^3.24.6",
+    "nodemailer": "^10.2.1"
   }
 }

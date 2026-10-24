@@ -19,7 +19,7 @@ and it keeps working on a weak or missing network connection.
 
 | | |
 |---|---|
-| Server | Node.js ≥ 20, Express, MySQL/MariaDB (`mysql2`, no native build required), Nodemailer |
+| Server | Node.js ≥ 22 (always on the latest patch release), Express, MySQL/MariaDB (`mysql2`, no native build required), Nodemailer |
 | Frontend | Plain JavaScript, no build step; PWA with service worker and IndexedDB |
 | Dependencies | 3 npm packages (`express`, `mysql2`, `nodemailer`) |
 
@@ -68,7 +68,7 @@ Remove the line afterwards.
 
 | Setting | Value |
 |---|---|
-| Node.js version | 20 or newer |
+| Node.js version | 22 or newer, latest patch release |
 | Application root | the project folder |
 | Application startup file | `app.cjs` |
 | Environment variables | as in `.env.example` (or a `.env` file in the project folder) |
